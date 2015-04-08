@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>FHIRbase</title>
+  <link rel="shortcut icon" href="img/fhirbase.png">
+
+  <!-- Bootstrap -->
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/custom.css">
+  <link rel="stylesheet" href="css/docs.css">
+
+  <!-- Open Sans Font  -->
+  <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,700,800' rel='stylesheet' type='text/css'>
+
+  </head>
+
+  <body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-default">
+    <div class="container">
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html"> AppaDrome</a>
+      </div>
+      <!--  <span class="icon">L</span> -->
+
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <ul class="nav navbar-nav navbar-right">
+          <li ><a href="index.html">Overview</a></li>
+          <!--
+          <li><a href="demo/tutorial.html">Tutorial</a></li>
+          <li><a href="demo/index.html">Demo</a></li>
+        -->
+          <li ><a href="installation.html">API Explorer</a></li>
+          <li class="active"><a href="docs.html">Documentation</a></li>
+          <li ><a href="support.html">Price</a></li>
+          <li><a href="/" class="btn btn-default btn-lg btn-signin">Sign In</a></li>
+        </ul>
+      </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+  </nav>
+  <!-- Navigation END -->
+
+  
+<div class="container gstarted">
+	<div class="col-md-9 docs-content">
+		
+			<h1 id="overview"> Overview </h1>
+			<hr>
+			<h2 id="motivation">Motivation</h2>
+
+<p>While crafting Health IT systems we understand an importance of a
+properly chosen domain model. FHIR is an open source new generation
+lightweight standard for health data interoperability, which (we hope)
+could be used as a foundation for Health IT systems. FHIR is based
+on a concept of <strong>resource</strong>.</p>
+
+<blockquote>
+  <p>FHIR® is a next generation standards framework created by HL7.  FHIR
+combines the best features of HL7 Version 2, Version 3 and CDA®
+product lines while leveraging the latest web standards and applying
+a tight focus on implementability.</p>
+</blockquote>
+
+<p>Also we learned that data is a heart of any information system, and
+should be reliably managed. PostgreSQL is a battle proved open source
+database which supports structured documents (jsonb) while
+preserving ACID guaranties and richness of SQL query language.</p>
+
+<blockquote>
+  <p>PostgreSQL is a powerful, open source object-relational database
+system.  It has more than 15 years of active development and a
+proven architecture that has earned it a strong reputation for
+reliability, data integrity, and correctness.</p>
+</blockquote>
+
+<p>Here is the list of PostgreSQL features that we use:</p>
+
+<ul>
+  <li><a href="http://www.postgresql.org/docs/9.4/static/functions-json.html">jsonb</a></li>
+  <li><a href="http://www.postgresql.org/docs/9.1/static/textsearch-indexes.html">gin &amp; gist</a></li>
+  <li><a href="http://www.postgresql.org/docs/9.4/static/tutorial-inheritance.html">inheritance</a></li>
+</ul>
+
+<p>We actively collaborate with PostgreSQL lead developers to craft
+production ready storage for FHIR.</p>
+
+<blockquote>
+  <p>Why are we doing this inside a database?</p>
+</blockquote>
+
+<p>We decided to implement most of FHIR specification inside a database for
+scalability reason (all data operations are done efficiently in a database).</p>
+
+<p>This approach also gives you a possibility to use FHIRbase from your
+preferred lang/platform (.NET, java, ruby, nodejs etc).
+We have implemented FHIR compliant server in clojure with small amount of
+code - <a href="https://github.com/fhirbase/fhirplace/">FHIRPlace</a>.</p>
+
+<p>And there is an option to break FHIR specification abstraction (if required) and
+go into the database by generic SQL interface and complete your business task.</p>
+
+<h2 id="features">Features</h2>
+
+<p>FHIRbase implements 80% of FHIR specification inside the database as
+procedures:</p>
+
+<ul>
+  <li>meta-data resource storage (StructureDefinition, ValueSet, SearchParameter, etc)</li>
+  <li>CRUD on resources with history</li>
+  <li>search operations with indexing</li>
+  <li>transactions</li>
+</ul>
+
+<h2 id="roadmap">Roadmap</h2>
+
+<ul>
+  <li>validation</li>
+  <li>referential integrity</li>
+  <li>terminology service</li>
+  <li>SDKs and guides for java, .NET, python, ruby, js</li>
+</ul>
+
+<h2 id="license">License</h2>
+
+<p>Copyright © 2014 health samurai.</p>
+
+<p>FHIRbase is released under the terms of the MIT License.</p>
+
+			<br>
+		
+			<h1 id="performance"> Performance </h1>
+			<hr>
+			<h1 id="fhirbase-performance">FHIRBase Performance</h1>
+
+<p>Generally, FHIRBase performance mainly depends on PostgreSQL
+configuration (TODO: explain configuration options). User should
+expect that FHIRBase is a bit slower in CRUD operations than
+general-purpose PostgreSQL setup because it stores additional
+meta-data for each resource and also uses Stored Procedures instead of
+vanilla SQL statements.</p>
+
+<p>Resources stored in FHIRBase will consume a bit more disk space than
+it’s raw JSON representation - about 1.3 of it’s original size. For
+example, if you store 1 million of resources (1KB each), such table
+will consume 1.3GB, not 1GB as you may expect. Additional indexes for
+fast searches will consume additional space depending on type of
+index.</p>
+
+<p>Searching, one of most important operations, is optimized very well,
+thanks to PostgreSQL GiN and GiST indices. It performs well on rather
+complex searches with sorting and chained params.</p>
+
+<p>Following table shows detailed timing which we get on MacBook Air 1,7
+GHz Intel Core i7, 8 GB 1600 MHz DDR3, SSD.</p>
+
+<table class="table table-condensed table-benchmark table-striped">
+  <thead>
+    <tr>
+      <th>Operation</th>
+      <th style="text-align: right">Elapsed time (ms)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>fhir.create called just one time</td>
+      <td style="text-align: right">25.243</td>
+    </tr>
+    <tr>
+      <td>fhir.create called 1000 times in batch</td>
+      <td style="text-align: right">1209.033</td>
+    </tr>
+    <tr>
+      <td>fhir.read called just one time</td>
+      <td style="text-align: right">6.694</td>
+    </tr>
+    <tr>
+      <td>fhir.read called 1000 times in batch</td>
+      <td style="text-align: right">356.768</td>
+    </tr>
+    <tr>
+      <td>Updating single patient with fhir.update()</td>
+      <td style="text-align: right">218.599</td>
+    </tr>
+    <tr>
+      <td>fhir.delete called one time</td>
+      <td style="text-align: right">13.135</td>
+    </tr>
+    <tr>
+      <td>fhir.delete called 1000 times in batch</td>
+      <td style="text-align: right">1182.448</td>
+    </tr>
+    <tr>
+      <td>searching for non-existent name without index</td>
+      <td style="text-align: right">97010.424</td>
+    </tr>
+    <tr>
+      <td>building Patient.name index</td>
+      <td style="text-align: right">143934.523</td>
+    </tr>
+    <tr>
+      <td>building Patient.gender index</td>
+      <td style="text-align: right">106689.734</td>
+    </tr>
+    <tr>
+      <td>building Patient.address index</td>
+      <td style="text-align: right">249214.413</td>
+    </tr>
+    <tr>
+      <td>building Patient.telecom index</td>
+      <td style="text-align: right">151158.313</td>
+    </tr>
+    <tr>
+      <td>building Participant.name index</td>
+      <td style="text-align: right">5.616</td>
+    </tr>
+    <tr>
+      <td>building Organization.name index</td>
+      <td style="text-align: right">64.074</td>
+    </tr>
+    <tr>
+      <td>building Organization.address index</td>
+      <td style="text-align: right">6.180</td>
+    </tr>
+    <tr>
+      <td>building Encounter.status index</td>
+      <td style="text-align: right">125611.808</td>
+    </tr>
+    <tr>
+      <td>building Encounter.patient index</td>
+      <td style="text-align: right">249651.823</td>
+    </tr>
+    <tr>
+      <td>building Encounter.participant index</td>
+      <td style="text-align: right">8.256</td>
+    </tr>
+    <tr>
+      <td>building Encounter.practitioner index</td>
+      <td style="text-align: right">7.585</td>
+    </tr>
+    <tr>
+      <td>building Patient.organization index</td>
+      <td style="text-align: right">105702.273</td>
+    </tr>
+    <tr>
+      <td>searching for patient with unique name</td>
+      <td style="text-align: right">51.238</td>
+    </tr>
+    <tr>
+      <td>searching for all Johns in database</td>
+      <td style="text-align: right">220.397</td>
+    </tr>
+    <tr>
+      <td>searching Patient with name=John&amp;gender=female&amp;_count=100 (should have no matches at all)</td>
+      <td style="text-align: right">172.586</td>
+    </tr>
+    <tr>
+      <td>searching Patient with name=John&amp;gender=male&amp;_count=100</td>
+      <td style="text-align: right">80.154</td>
+    </tr>
+    <tr>
+      <td>searching Patient with name=John&amp;gender=male&amp;active=true&amp;address=YALUMBA&amp;_count=100</td>
+      <td style="text-align: right">31.600</td>
+    </tr>
+    <tr>
+      <td>searching Patient with name=John&amp;gender=male&amp;_count=100&amp;_sort=name</td>
+      <td style="text-align: right">234.077</td>
+    </tr>
+    <tr>
+      <td>searching Patient with name=John&amp;gender=male&amp;_count=100&amp;_sort=active</td>
+      <td style="text-align: right">209.552</td>
+    </tr>
+    <tr>
+      <td>searching Encounter with patient:Patient.name=John&amp;_count=100&amp;status=finished&amp;practitioner:Practitioner.name=Alex</td>
+      <td style="text-align: right">34834.579</td>
+    </tr>
+    <tr>
+      <td>searching Encounter with patient:Patient.name=John&amp;_count=100&amp;patient:Patient.organization:Organization.name=Mollis</td>
+      <td style="text-align: right">373.777</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="generating-test-data-and-running-benchmarks-on-your-machine">Generating test data and running benchmarks on your machine</h2>
+
+<p>FHIRBase <code>runme</code> utility can be used to run benchmarks on your
+machine. At first, generate test data:</p>
+
+<pre><code class="language-bash">$ cd fhirbase
+$ DB=&lt;your db&gt; PATIENTS_COUNT=1000000 ./runme seed
+</code></pre>
+
+<p>This command will generate 1 million of Patients, 1.3 million of
+Encounters, 200 Practitioners and 400 Organizations, and will
+cross-link them with ResourceReferences. Usually it takes from 5 to
+20 minutes to generate such amount of data.</p>
+
+<p>Now you can run benchmark suite:</p>
+
+<pre><code class="language-bash">$ DB=&lt;your db&gt; ./runme perf
+</code></pre>
+
+<p>This operation can take some time, be patient.</p>
+
+			<br>
+		
+			<h1 id="development"> Development </h1>
+			<hr>
+			<h2 id="development-guide">Development Guide</h2>
+
+<p>Quick installation on ubuntu:</p>
+
+<pre><code class="language-bash">sudo apt-get install -qqy postgresql-9.4 postgresql-contrib-9.4 curl python
+sudo su postgres -c 'createuser -s &lt;you-local-user&gt;'
+export PGUSER=&lt;you-local-user&gt;
+export DB=test
+
+git clone https://github.com/fhirbase/fhirbase
+cd fhirbase
+./runme integrate
+</code></pre>
+
+<h3 id="project-structure">Project structure</h3>
+
+<ul>
+  <li>docs/   - all documentation goes here</li>
+  <li>fhir/   - core profiles from FHIR distrib</li>
+  <li>perf/   - benchmarks stuf</li>
+  <li>schema/ - schema migrations</li>
+  <li>src/    - functions source code</li>
+  <li>test/   - tests</li>
+  <li>ql/     - runme &amp; preprocessor code written in python</li>
+  <li>runme*  - utils to work with fhirbase</li>
+</ul>
+
+<p>Code is split into two categories -
+schema changing code (migrations in <code>schema/</code> directory) and reloadable functions (in <code>src/</code>).</p>
+
+<p>To reduce sql boilerplate and modularize application
+we use simple SQL preprocessor written in python (in <code>ql/</code> directory).</p>
+
+<h3 id="runme">runme</h3>
+
+<p>All tasks for fhirbase could be done using <code>runme</code> script in form
+~~~bash
+env DB=test ./runme <command /> <args>
+~~~</args></p>
+
+<p>Here is the list of subcomands:</p>
+
+<ul>
+  <li>migrate - migrate DB to latest schema version</li>
+  <li>test - run tests on DB</li>
+  <li>integrate - drop &amp; create DB, migrate and reload code, then run tests</li>
+  <li>load <files-glob> - load module into database if changed</files-glob></li>
+  <li>reload <files-glob> - force load module into database</files-glob></li>
+  <li>compile <file-glob> - preprocess file and send it to STDOUT</file-glob></li>
+  <li>build - integrate database and create dump for distribution</li>
+</ul>
+
+<h3 id="pre-processor--dependency-management">Pre-processor &amp; Dependency management</h3>
+
+<p>PostgreSQL has one-level namespaces - <a href="http://www.postgresql.org/docs/9.4/static/ddl-schemas.html">schemas</a>.
+We use schemas to implement code modules, this allow create and reload modules as a whole.
+Every file in <code>src/</code> is mapped to schema with same name as file.
+For example functions defined in <code>src/fhir.sql</code> will be in <em>fhir</em> schema.</p>
+
+<p>Having modules allows us introduce dependencies between modules.
+They implemented as magic comments in source files and using loader (./runme).</p>
+
+<p>For example you have created module a.sql with function <code>util</code>. Then you want to
+create module b.sql, which depends on module <code>a</code>:</p>
+
+<pre><code class="language-sql">-- file src/b.sql
+-- #import ./a.sql
+
+...
+  b.util()
+...
+
+</code></pre>
+
+<p>Then you can load module b into databse:</p>
+
+<pre><code class="language-bash">./runme load src/a.sql
+</code></pre>
+
+<p>Loader read <code>#import</code> instructions and resolve dependencies recursively,
+then load all modules in right order and write module status into special table <code>modules</code>.
+Loader also calculate sha1 of module file
+content and reload module only if hash changed (caching).
+If you run <code>load</code> command again without changes in files - it will do nothing.</p>
+
+<p>To reduce sql boilerplate you can use some macro expansions in source files.</p>
+
+<h4 id="func-and-func">func and func!</h4>
+
+<p>you can write sql functions in python style,
+ie body of function should be idented:</p>
+
+<pre><code class="language-sql">-- FILE: src/coll.sql
+func _butlast(_ar_ anyarray) returns anyarray
+  SELECT _ar_[array_lower(_ar_,1) : array_upper(_ar_,1) - 1]
+</code></pre>
+
+<p>Preprocessor will produce:</p>
+
+<pre><code class="language-sql">-- FILE: src/coll.sql
+drop schema if exists coll cascade;
+create schema coll;
+CREATE OR REPLACE
+function coll._butlast(_ar_ anyarray) RETURNS anyarray
+LANGUAGE sql AS $$
+  SELECT _ar_[array_lower(_ar_,1) : array_upper(_ar_,1) - 1] -- coll:3
+$$ IMMUTABLE;
+
+</code></pre>
+
+<p>You can always inspect result of preprocessor by running <code>./runme compile src/file.sql</code>.</p>
+
+<p>Here is list of macro expansions:</p>
+
+<ul>
+  <li>func(args) returns type =&gt; sql IMMUTABLE function</li>
+  <li>func!(args) returns type =&gt; sql function</li>
+  <li>proc(args) returns type =&gt; pg/plsql IMMUTABLE function</li>
+  <li>proc!(args) returns type =&gt; pg/plsql function</li>
+  <li>this =&gt; replaced with name of current schema name</li>
+</ul>
+
+<h3 id="migrations">Migrations</h3>
+
+<p>To allow update existing fhirbase installation to next version, we track schema changes
+using migrations approach - all schema changes are in <code>schema/</code> directory and enumerated using
+timestamps. When you run <code>/.runme migrate</code> all pending migrations will be applied.</p>
+
+<h3 id="tests">Tests</h3>
+
+<p>There are some preprocessor sugar for tests:</p>
+
+<pre><code class="language-sql">-- one-line test
+select 1 =&gt; 1
+
+---will be compiled into:
+
+SELECT tests.expect('', 'test/&lt;file&gt;.sql:&lt;line-number&gt;',(select 1),(1));
+</code></pre>
+
+<p>Here is also multiline form (body should be idented):</p>
+
+<pre><code class="language-sql">expect "Comment"
+  select 1
+=&gt; 1
+
+-- compiled
+
+SELECT tests.expect('Comment', 'test/&lt;file&gt;.sql:&lt;line-number&gt;',(select 1),(1));
+</code></pre>
+
+<p>To test for exeptions there is special syntax:</p>
+
+<pre><code class="language-sql">expect_raise 'does not exist'
+  SELECT crud.delete('{}'::jsonb, 'Patient', 'nonexisting')
+
+--- compiled
+
+SELECT tests.expect_raise('does not exist', 'test/fhir_crud_spec.sql:151',
+($SQL$
+  SELECT crud.delete('{}'::jsonb, 'Patient', 'nonexisting') -- fhir_crud_spec:151
+$SQL$));
+</code></pre>
+
+<p>Source code of expect functions is in src/tests.sql.</p>
+
+			<br>
+		
+	</div>
+	<div class="col-md-3 sub-nav">
+		<ul class="subnav-list list-unstyled" id="nav">
+                
+		     <li ><a href="#overview">Overview</a></li>
+		  
+		     <li ><a href="#performance">Performance</a></li>
+		  
+		     <li ><a href="#development">Development</a></li>
+		  
+		</ul>
+	</div>
+</div>
+
+
+  <footer>
+    <div class="container footer">
+      <div class="col-md-6">
+        <h3>AppaDrome</h3>
+        <p></a></p>
+        <br>
+      </div>
+      <div class="col-md-6 text-right">
+        <h3>Links</h3>
+        <ul class="list-unstyled">
+          <li><a href="demo/index.html">FHIRbase Demo</a></li>
+          <li><a href="https://groups.google.com/forum/#!forum/fhirbase" target="_blank">FHIRbase Community</a></li>
+          <li><a href="https://github.com/fhirbase" target="_blank">FHIRbase on GitHub</a></li>
+          <li><a href="https://registry.hub.docker.com/repos/fhirbase/" target="_blank">FHIRbase on Dockerhub</a></li>
+          <li><a href="https://twitter.com/fhirbase" target="_blank">FHIRbase twitter</a></li>
+          
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <p>2014 - 2015. <a href="http://health-samurai.io" target="_blank">Health Samurai Team</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+  <!-- Include all compiled plugins (below), or include individual files as needed -->
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/jquery.nav.js"></script>
+  <script src="js/jquery.scrollTo.min.js"></script>
+  <script>
+    $(document).ready(function() {
+    $('#nav').onePageNav({
+      changeHash: true
+    });
+  });
+  </script>
+
+  <script type="text/javascript">
+    $('.collapse').collapse({
+      toggle: false
+    });
+  </script>
+
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-60863142-1', 'auto');
+    ga('send', 'pageview');
+
+    $('#download').on('click', function() {
+      console.log('download');
+      ga('send', 'event', 'download', 'click', 'download-sql');
+      window.open('https://raw.githubusercontent.com/fhirbase/fhirbase-build/master/fhirbase.sql');
+    });
+  </script>
+
+  </body>
+</html>
+
+<!--
+  <div class="header">
+    <h1 class="title"><a href="/">FHIRbase</a></h1>
+    <a class="extra" href="/">home</a>
+  </div>
+  -->

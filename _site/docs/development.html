@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Development</title>
+  <link rel="shortcut icon" href="img/fhirbase.png">
+
+  <!-- Bootstrap -->
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/custom.css">
+  <link rel="stylesheet" href="css/docs.css">
+
+  <!-- Open Sans Font  -->
+  <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,700,800' rel='stylesheet' type='text/css'>
+
+  </head>
+
+  <body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-default">
+    <div class="container">
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html"> AppaDrome</a>
+      </div>
+      <!--  <span class="icon">L</span> -->
+
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <ul class="nav navbar-nav navbar-right">
+          <li ><a href="index.html">Overview</a></li>
+          <!--
+          <li><a href="demo/tutorial.html">Tutorial</a></li>
+          <li><a href="demo/index.html">Demo</a></li>
+        -->
+          <li ><a href="installation.html">API Explorer</a></li>
+          <li ><a href="docs.html">Documentation</a></li>
+          <li ><a href="support.html">Price</a></li>
+          <li><a href="/" class="btn btn-default btn-lg btn-signin">Sign In</a></li>
+        </ul>
+      </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+  </nav>
+  <!-- Navigation END -->
+
+  <h2 id="development-guide">Development Guide</h2>
+
+<p>Quick installation on ubuntu:</p>
+
+<pre><code class="language-bash">sudo apt-get install -qqy postgresql-9.4 postgresql-contrib-9.4 curl python
+sudo su postgres -c 'createuser -s &lt;you-local-user&gt;'
+export PGUSER=&lt;you-local-user&gt;
+export DB=test
+
+git clone https://github.com/fhirbase/fhirbase
+cd fhirbase
+./runme integrate
+</code></pre>
+
+<h3 id="project-structure">Project structure</h3>
+
+<ul>
+  <li>docs/   - all documentation goes here</li>
+  <li>fhir/   - core profiles from FHIR distrib</li>
+  <li>perf/   - benchmarks stuf</li>
+  <li>schema/ - schema migrations</li>
+  <li>src/    - functions source code</li>
+  <li>test/   - tests</li>
+  <li>ql/     - runme &amp; preprocessor code written in python</li>
+  <li>runme*  - utils to work with fhirbase</li>
+</ul>
+
+<p>Code is split into two categories -
+schema changing code (migrations in <code>schema/</code> directory) and reloadable functions (in <code>src/</code>).</p>
+
+<p>To reduce sql boilerplate and modularize application
+we use simple SQL preprocessor written in python (in <code>ql/</code> directory).</p>
+
+<h3 id="runme">runme</h3>
+
+<p>All tasks for fhirbase could be done using <code>runme</code> script in form
+~~~bash
+env DB=test ./runme <command /> <args>
+~~~</args></p>
+
+<p>Here is the list of subcomands:</p>
+
+<ul>
+  <li>migrate - migrate DB to latest schema version</li>
+  <li>test - run tests on DB</li>
+  <li>integrate - drop &amp; create DB, migrate and reload code, then run tests</li>
+  <li>load <files-glob> - load module into database if changed</files-glob></li>
+  <li>reload <files-glob> - force load module into database</files-glob></li>
+  <li>compile <file-glob> - preprocess file and send it to STDOUT</file-glob></li>
+  <li>build - integrate database and create dump for distribution</li>
+</ul>
+
+<h3 id="pre-processor--dependency-management">Pre-processor &amp; Dependency management</h3>
+
+<p>PostgreSQL has one-level namespaces - <a href="http://www.postgresql.org/docs/9.4/static/ddl-schemas.html">schemas</a>.
+We use schemas to implement code modules, this allow create and reload modules as a whole.
+Every file in <code>src/</code> is mapped to schema with same name as file.
+For example functions defined in <code>src/fhir.sql</code> will be in <em>fhir</em> schema.</p>
+
+<p>Having modules allows us introduce dependencies between modules.
+They implemented as magic comments in source files and using loader (./runme).</p>
+
+<p>For example you have created module a.sql with function <code>util</code>. Then you want to
+create module b.sql, which depends on module <code>a</code>:</p>
+
+<pre><code class="language-sql">-- file src/b.sql
+-- #import ./a.sql
+
+...
+  b.util()
+...
+
+</code></pre>
+
+<p>Then you can load module b into databse:</p>
+
+<pre><code class="language-bash">./runme load src/a.sql
+</code></pre>
+
+<p>Loader read <code>#import</code> instructions and resolve dependencies recursively,
+then load all modules in right order and write module status into special table <code>modules</code>.
+Loader also calculate sha1 of module file
+content and reload module only if hash changed (caching).
+If you run <code>load</code> command again without changes in files - it will do nothing.</p>
+
+<p>To reduce sql boilerplate you can use some macro expansions in source files.</p>
+
+<h4 id="func-and-func">func and func!</h4>
+
+<p>you can write sql functions in python style,
+ie body of function should be idented:</p>
+
+<pre><code class="language-sql">-- FILE: src/coll.sql
+func _butlast(_ar_ anyarray) returns anyarray
+  SELECT _ar_[array_lower(_ar_,1) : array_upper(_ar_,1) - 1]
+</code></pre>
+
+<p>Preprocessor will produce:</p>
+
+<pre><code class="language-sql">-- FILE: src/coll.sql
+drop schema if exists coll cascade;
+create schema coll;
+CREATE OR REPLACE
+function coll._butlast(_ar_ anyarray) RETURNS anyarray
+LANGUAGE sql AS $$
+  SELECT _ar_[array_lower(_ar_,1) : array_upper(_ar_,1) - 1] -- coll:3
+$$ IMMUTABLE;
+
+</code></pre>
+
+<p>You can always inspect result of preprocessor by running <code>./runme compile src/file.sql</code>.</p>
+
+<p>Here is list of macro expansions:</p>
+
+<ul>
+  <li>func(args) returns type =&gt; sql IMMUTABLE function</li>
+  <li>func!(args) returns type =&gt; sql function</li>
+  <li>proc(args) returns type =&gt; pg/plsql IMMUTABLE function</li>
+  <li>proc!(args) returns type =&gt; pg/plsql function</li>
+  <li>this =&gt; replaced with name of current schema name</li>
+</ul>
+
+<h3 id="migrations">Migrations</h3>
+
+<p>To allow update existing fhirbase installation to next version, we track schema changes
+using migrations approach - all schema changes are in <code>schema/</code> directory and enumerated using
+timestamps. When you run <code>/.runme migrate</code> all pending migrations will be applied.</p>
+
+<h3 id="tests">Tests</h3>
+
+<p>There are some preprocessor sugar for tests:</p>
+
+<pre><code class="language-sql">-- one-line test
+select 1 =&gt; 1
+
+---will be compiled into:
+
+SELECT tests.expect('', 'test/&lt;file&gt;.sql:&lt;line-number&gt;',(select 1),(1));
+</code></pre>
+
+<p>Here is also multiline form (body should be idented):</p>
+
+<pre><code class="language-sql">expect "Comment"
+  select 1
+=&gt; 1
+
+-- compiled
+
+SELECT tests.expect('Comment', 'test/&lt;file&gt;.sql:&lt;line-number&gt;',(select 1),(1));
+</code></pre>
+
+<p>To test for exeptions there is special syntax:</p>
+
+<pre><code class="language-sql">expect_raise 'does not exist'
+  SELECT crud.delete('{}'::jsonb, 'Patient', 'nonexisting')
+
+--- compiled
+
+SELECT tests.expect_raise('does not exist', 'test/fhir_crud_spec.sql:151',
+($SQL$
+  SELECT crud.delete('{}'::jsonb, 'Patient', 'nonexisting') -- fhir_crud_spec:151
+$SQL$));
+</code></pre>
+
+<p>Source code of expect functions is in src/tests.sql.</p>
+
+
+  <footer>
+    <div class="container footer">
+      <div class="col-md-6">
+        <h3>AppaDrome</h3>
+        <p></a></p>
+        <br>
+      </div>
+      <div class="col-md-6 text-right">
+        <h3>Links</h3>
+        <ul class="list-unstyled">
+          <li><a href="demo/index.html">FHIRbase Demo</a></li>
+          <li><a href="https://groups.google.com/forum/#!forum/fhirbase" target="_blank">FHIRbase Community</a></li>
+          <li><a href="https://github.com/fhirbase" target="_blank">FHIRbase on GitHub</a></li>
+          <li><a href="https://registry.hub.docker.com/repos/fhirbase/" target="_blank">FHIRbase on Dockerhub</a></li>
+          <li><a href="https://twitter.com/fhirbase" target="_blank">FHIRbase twitter</a></li>
+          
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <p>2014 - 2015. <a href="http://health-samurai.io" target="_blank">Health Samurai Team</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+  <!-- Include all compiled plugins (below), or include individual files as needed -->
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/jquery.nav.js"></script>
+  <script src="js/jquery.scrollTo.min.js"></script>
+  <script>
+    $(document).ready(function() {
+    $('#nav').onePageNav({
+      changeHash: true
+    });
+  });
+  </script>
+
+  <script type="text/javascript">
+    $('.collapse').collapse({
+      toggle: false
+    });
+  </script>
+
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-60863142-1', 'auto');
+    ga('send', 'pageview');
+
+    $('#download').on('click', function() {
+      console.log('download');
+      ga('send', 'event', 'download', 'click', 'download-sql');
+      window.open('https://raw.githubusercontent.com/fhirbase/fhirbase-build/master/fhirbase.sql');
+    });
+  </script>
+
+  </body>
+</html>
+
+<!--
+  <div class="header">
+    <h1 class="title"><a href="/">FHIRbase</a></h1>
+    <a class="extra" href="/">home</a>
+  </div>
+  -->

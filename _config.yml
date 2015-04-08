@@ -1,0 +1,14 @@
+name: FHIRbase
+markdown: kramdown
+highlighter: pygments
+
+collections:
+  instructions:
+    output: true
+  docs:
+    output: true
+
+exclude: [/vendor/]
+
+redcarpet:
+  extensions: ['tables']

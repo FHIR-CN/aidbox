@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Performance</title>
+  <link rel="shortcut icon" href="img/fhirbase.png">
+
+  <!-- Bootstrap -->
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/custom.css">
+  <link rel="stylesheet" href="css/docs.css">
+
+  <!-- Open Sans Font  -->
+  <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,700,800' rel='stylesheet' type='text/css'>
+
+  </head>
+
+  <body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-default">
+    <div class="container">
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html"> AppaDrome</a>
+      </div>
+      <!--  <span class="icon">L</span> -->
+
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <ul class="nav navbar-nav navbar-right">
+          <li ><a href="index.html">Overview</a></li>
+          <!--
+          <li><a href="demo/tutorial.html">Tutorial</a></li>
+          <li><a href="demo/index.html">Demo</a></li>
+        -->
+          <li ><a href="installation.html">API Explorer</a></li>
+          <li ><a href="docs.html">Documentation</a></li>
+          <li ><a href="support.html">Price</a></li>
+          <li><a href="/" class="btn btn-default btn-lg btn-signin">Sign In</a></li>
+        </ul>
+      </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+  </nav>
+  <!-- Navigation END -->
+
+  <h1 id="fhirbase-performance">FHIRBase Performance</h1>
+
+<p>Generally, FHIRBase performance mainly depends on PostgreSQL
+configuration (TODO: explain configuration options). User should
+expect that FHIRBase is a bit slower in CRUD operations than
+general-purpose PostgreSQL setup because it stores additional
+meta-data for each resource and also uses Stored Procedures instead of
+vanilla SQL statements.</p>
+
+<p>Resources stored in FHIRBase will consume a bit more disk space than
+it’s raw JSON representation - about 1.3 of it’s original size. For
+example, if you store 1 million of resources (1KB each), such table
+will consume 1.3GB, not 1GB as you may expect. Additional indexes for
+fast searches will consume additional space depending on type of
+index.</p>
+
+<p>Searching, one of most important operations, is optimized very well,
+thanks to PostgreSQL GiN and GiST indices. It performs well on rather
+complex searches with sorting and chained params.</p>
+
+<p>Following table shows detailed timing which we get on MacBook Air 1,7
+GHz Intel Core i7, 8 GB 1600 MHz DDR3, SSD.</p>
+
+<table class="table table-condensed table-benchmark table-striped">
+  <thead>
+    <tr>
+      <th>Operation</th>
+      <th style="text-align: right">Elapsed time (ms)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>fhir.create called just one time</td>
+      <td style="text-align: right">25.243</td>
+    </tr>
+    <tr>
+      <td>fhir.create called 1000 times in batch</td>
+      <td style="text-align: right">1209.033</td>
+    </tr>
+    <tr>
+      <td>fhir.read called just one time</td>
+      <td style="text-align: right">6.694</td>
+    </tr>
+    <tr>
+      <td>fhir.read called 1000 times in batch</td>
+      <td style="text-align: right">356.768</td>
+    </tr>
+    <tr>
+      <td>Updating single patient with fhir.update()</td>
+      <td style="text-align: right">218.599</td>
+    </tr>
+    <tr>
+      <td>fhir.delete called one time</td>
+      <td style="text-align: right">13.135</td>
+    </tr>
+    <tr>
+      <td>fhir.delete called 1000 times in batch</td>
+      <td style="text-align: right">1182.448</td>
+    </tr>
+    <tr>
+      <td>searching for non-existent name without index</td>
+      <td style="text-align: right">97010.424</td>
+    </tr>
+    <tr>
+      <td>building Patient.name index</td>
+      <td style="text-align: right">143934.523</td>
+    </tr>
+    <tr>
+      <td>building Patient.gender index</td>
+      <td style="text-align: right">106689.734</td>
+    </tr>
+    <tr>
+      <td>building Patient.address index</td>
+      <td style="text-align: right">249214.413</td>
+    </tr>
+    <tr>
+      <td>building Patient.telecom index</td>
+      <td style="text-align: right">151158.313</td>
+    </tr>
+    <tr>
+      <td>building Participant.name index</td>
+      <td style="text-align: right">5.616</td>
+    </tr>
+    <tr>
+      <td>building Organization.name index</td>
+      <td style="text-align: right">64.074</td>
+    </tr>
+    <tr>
+      <td>building Organization.address index</td>
+      <td style="text-align: right">6.180</td>
+    </tr>
+    <tr>
+      <td>building Encounter.status index</td>
+      <td style="text-align: right">125611.808</td>
+    </tr>
+    <tr>
+      <td>building Encounter.patient index</td>
+      <td style="text-align: right">249651.823</td>
+    </tr>
+    <tr>
+      <td>building Encounter.participant index</td>
+      <td style="text-align: right">8.256</td>
+    </tr>
+    <tr>
+      <td>building Encounter.practitioner index</td>
+      <td style="text-align: right">7.585</td>
+    </tr>
+    <tr>
+      <td>building Patient.organization index</td>
+      <td style="text-align: right">105702.273</td>
+    </tr>
+    <tr>
+      <td>searching for patient with unique name</td>
+      <td style="text-align: right">51.238</td>
+    </tr>
+    <tr>
+      <td>searching for all Johns in database</td>
+      <td style="text-align: right">220.397</td>
+    </tr>
+    <tr>
+      <td>searching Patient with name=John&amp;gender=female&amp;_count=100 (should have no matches at all)</td>
+      <td style="text-align: right">172.586</td>
+    </tr>
+    <tr>
+      <td>searching Patient with name=John&amp;gender=male&amp;_count=100</td>
+      <td style="text-align: right">80.154</td>
+    </tr>
+    <tr>
+      <td>searching Patient with name=John&amp;gender=male&amp;active=true&amp;address=YALUMBA&amp;_count=100</td>
+      <td style="text-align: right">31.600</td>
+    </tr>
+    <tr>
+      <td>searching Patient with name=John&amp;gender=male&amp;_count=100&amp;_sort=name</td>
+      <td style="text-align: right">234.077</td>
+    </tr>
+    <tr>
+      <td>searching Patient with name=John&amp;gender=male&amp;_count=100&amp;_sort=active</td>
+      <td style="text-align: right">209.552</td>
+    </tr>
+    <tr>
+      <td>searching Encounter with patient:Patient.name=John&amp;_count=100&amp;status=finished&amp;practitioner:Practitioner.name=Alex</td>
+      <td style="text-align: right">34834.579</td>
+    </tr>
+    <tr>
+      <td>searching Encounter with patient:Patient.name=John&amp;_count=100&amp;patient:Patient.organization:Organization.name=Mollis</td>
+      <td style="text-align: right">373.777</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="generating-test-data-and-running-benchmarks-on-your-machine">Generating test data and running benchmarks on your machine</h2>
+
+<p>FHIRBase <code>runme</code> utility can be used to run benchmarks on your
+machine. At first, generate test data:</p>
+
+<pre><code class="language-bash">$ cd fhirbase
+$ DB=&lt;your db&gt; PATIENTS_COUNT=1000000 ./runme seed
+</code></pre>
+
+<p>This command will generate 1 million of Patients, 1.3 million of
+Encounters, 200 Practitioners and 400 Organizations, and will
+cross-link them with ResourceReferences. Usually it takes from 5 to
+20 minutes to generate such amount of data.</p>
+
+<p>Now you can run benchmark suite:</p>
+
+<pre><code class="language-bash">$ DB=&lt;your db&gt; ./runme perf
+</code></pre>
+
+<p>This operation can take some time, be patient.</p>
+
+
+  <footer>
+    <div class="container footer">
+      <div class="col-md-6">
+        <h3>AppaDrome</h3>
+        <p></a></p>
+        <br>
+      </div>
+      <div class="col-md-6 text-right">
+        <h3>Links</h3>
+        <ul class="list-unstyled">
+          <li><a href="demo/index.html">FHIRbase Demo</a></li>
+          <li><a href="https://groups.google.com/forum/#!forum/fhirbase" target="_blank">FHIRbase Community</a></li>
+          <li><a href="https://github.com/fhirbase" target="_blank">FHIRbase on GitHub</a></li>
+          <li><a href="https://registry.hub.docker.com/repos/fhirbase/" target="_blank">FHIRbase on Dockerhub</a></li>
+          <li><a href="https://twitter.com/fhirbase" target="_blank">FHIRbase twitter</a></li>
+          
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <p>2014 - 2015. <a href="http://health-samurai.io" target="_blank">Health Samurai Team</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+  <!-- Include all compiled plugins (below), or include individual files as needed -->
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/jquery.nav.js"></script>
+  <script src="js/jquery.scrollTo.min.js"></script>
+  <script>
+    $(document).ready(function() {
+    $('#nav').onePageNav({
+      changeHash: true
+    });
+  });
+  </script>
+
+  <script type="text/javascript">
+    $('.collapse').collapse({
+      toggle: false
+    });
+  </script>
+
+  <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-60863142-1', 'auto');
+    ga('send', 'pageview');
+
+    $('#download').on('click', function() {
+      console.log('download');
+      ga('send', 'event', 'download', 'click', 'download-sql');
+      window.open('https://raw.githubusercontent.com/fhirbase/fhirbase-build/master/fhirbase.sql');
+    });
+  </script>
+
+  </body>
+</html>
+
+<!--
+  <div class="header">
+    <h1 class="title"><a href="/">FHIRbase</a></h1>
+    <a class="extra" href="/">home</a>
+  </div>
+  -->
